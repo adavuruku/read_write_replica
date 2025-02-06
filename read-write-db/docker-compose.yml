@@ -1,0 +1,83 @@
+---
+version: '3.8'
+services:
+  postgres-write:
+    image: postgres:14-alpine
+    container_name: postgres-write
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: db_write
+      POSTGRES_REPLICATION_USER: repl_user
+      POSTGRES_REPLICATION_PASSWORD: repl_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-write:/var/lib/postgresql/data
+    command: >
+      postgres -c wal_level=replica
+               -c max_wal_senders=5
+               -c hot_standby=on
+
+  postgres-read:
+    image: postgres:14-alpine
+    container_name: postgres-read
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: db_read
+    ports:
+      - "5431:5432"
+    volumes:
+      - db-read:/var/lib/postgresql/data
+#    command: >
+#      postgres -c wal_level=replica
+#               -c max_wal_senders=5
+#               -c hot_standby=on
+
+#  postgres-read:
+#    image: postgres:14-alpine
+#    container_name: postgres-read
+#    restart: always
+#    depends_on:
+#      - postgres-write
+#    environment:
+#      POSTGRES_USER: root
+#      POSTGRES_PASSWORD: secret
+#      POSTGRES_DB: db_read
+#      POSTGRES_REPLICATION_USER: repl_user
+#      POSTGRES_REPLICATION_PASSWORD: repl_password
+#      POSTGRES_HOST_AUTH_METHOD: trust
+#      PGDATA: c:/data/docker/postgresql/data
+#    ports:
+#      - "5431:5432"
+#    volumes:
+#      - c:/data/docker/postgresql/data:/var/lib/postgresql/data
+#    command: >
+#      bash -c "
+#        rm -rf c:/data/docker/postgresql/data/* &&
+#        PGPASSWORD=repl_password pg_basebackup -h postgres-write -U repl_user -D  c:/data/docker/postgresql/data -Fp -Xs -P -R &&
+#        echo 'standby_mode = on' >>  c:/data/docker/postgresql/data/recovery.conf &&
+#        echo 'primary_conninfo = \"host=postgres-write port=5432 user=repl_user password=repl_password\"' >>  c:/data/docker/postgresql/data/recovery.conf &&
+#      echo 'primary_conninfo = 'host=postgres-write port=5432 user=repl_user password=repl_password sslmode=prefer' >>  c:/data/docker/postgresql/data/postgresql.conf "
+##    command: >
+##      bash -c "
+##        rm -rf /data/docker/postgresql/data/* &&
+##        chown -R 999:999 /data/docker/postgresql/data || { echo 'Failed to set ownership'; exit 1; } &&
+##        PGPASSWORD=repl_password pg_basebackup -h postgres-write -U repl_user -D /data/docker/postgresql/data -Fp -Xs -P -R &&
+##        echo 'standby_mode = on' >> /data/docker/postgresql/data/recovery.conf &&
+##        echo 'primary_conninfo = \"host=postgres-write port=5432 user=repl_user password=repl_password\"' >> /data/docker/postgresql/data/recovery.conf"
+##    command: >
+##      bash -c "
+##        rm -rf /var/lib/postgresql/data/* &&
+##        chown -R 999:999 /var/lib/postgresql/data || { echo 'Failed to set ownership'; exit 1; } &&
+##        PGPASSWORD=repl_password pg_basebackup -h postgres-write -U repl_user -D /var/lib/postgresql/data -Fp -Xs -P -R &&
+##        echo 'standby_mode = on' >> /var/lib/postgresql/data/recovery.conf &&
+##        exec su-exec postgres postgres"
+
+volumes:
+  db-write:
+  db-read:
