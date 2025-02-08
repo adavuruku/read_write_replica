@@ -19,11 +19,14 @@ public class RoutingDataSource extends AbstractRoutingDataSource {
 
     @Override
     protected Object determineCurrentLookupKey() {
-        boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
-        DataSourceType dataSourceType = isReadOnly ? DataSourceType.READ : DataSourceType.WRITE;
-        logger.info("Using data source: {} - isReadOnly {}", dataSourceType, isReadOnly);
-        return dataSourceType;
-//        logger.info("Using data source: {} - isReadOnly {}", DatabaseContextHolder.get());
-//        return DatabaseContextHolder.get();
+//        boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
+//        DataSourceType dataSourceType = isReadOnly ? DataSourceType.READ : DataSourceType.WRITE;
+//
+//
+//        logger.info("Using data source: {} - isReadOnly {}", dataSourceType, isReadOnly);
+//
+//        return dataSourceType;
+        logger.info("Using data source: {} - isReadOnly {}", DatabaseContextHolder.get());
+        return DatabaseContextHolder.get();
     }
 }
