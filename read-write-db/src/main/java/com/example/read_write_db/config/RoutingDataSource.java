@@ -26,7 +26,13 @@ public class RoutingDataSource extends AbstractRoutingDataSource {
 //        logger.info("Using data source: {} - isReadOnly {}", dataSourceType, isReadOnly);
 //
 //        return dataSourceType;
-        logger.info("Using data source: {} - isReadOnly {}", DatabaseContextHolder.get());
+
+        //set default context. for every transaction initiate by spring if default context is null or not set
+        if(DatabaseContextHolder.get() == null){
+            logger.info("Setting Default Context to Datasource {}", DataSourceType.WRITE);
+            DatabaseContextHolder.set(DataSourceType.WRITE);
+        }
+        logger.info("Using data source: {} ", DatabaseContextHolder.get());
         return DatabaseContextHolder.get();
     }
 }

@@ -12,8 +12,9 @@ import java.util.Optional;
 /**
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:48 PM
  **/
-@Repository
-public interface UserRepo extends JpaRepository<User, Long> {
-    @UseDataSource(DataSourceType.WRITE)
-    User save(User user);
-}
+public class UserRepo{}
+//@Repository
+//public interface UserRepo extends JpaRepository<User, Long> {
+//    @UseDataSource(DataSourceType.WRITE)
+//    User save(User user);
+//}

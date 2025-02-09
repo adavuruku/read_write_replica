@@ -1,0 +1,134 @@
+Yes, you're absolutely right! When using a dynamic data source routing strategy in Spring, the **transaction manager does not automatically pick up the new data source within an active transaction**. This is because the **data source is determined at the start of the transaction** and does not change mid-transaction.
+
+### **✅ The Key Problem**
+- Once a transaction is started, the **data source is determined and fixed**.
+- Changing the `DataSourceContextHolder` inside the same transaction **does nothing** because the transaction manager still holds the previously bound `EntityManagerFactory`.
+- **Propagation behavior must be `REQUIRES_NEW`** to force a new transaction and allow Spring to pick up the new data source.
+
+---
+
+### **🔹 Solution: Force a New Transaction for Read vs. Write**
+To **force the new transaction manager to use the new data source**, we **must**:
+1. **Ensure transactions with `@Transactional` switch correctly** by setting `Propagation.REQUIRES_NEW`.
+2. **Use separate transaction managers for read and write** (optional but preferred in highly concurrent apps).
+3. **Make sure the `RoutingDataSource` is truly dynamic** at every new transaction.
+
+---
+
+## **🚀 Updated Working Implementation**
+### **1️⃣ Force Transactions to Use New DataSource**
+Modify your **annotation** so that it forces a new transaction when switching between read/write.
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Transactional(propagation = Propagation.REQUIRES_NEW)  // Enforce new transaction
+public @interface UseDataSource {
+    DataSourceType value();
+}
+```
+
+---
+
+### **2️⃣ Modify the Aspect to Ensure Propagation Works**
+Ensure that the `RoutingDataSource` correctly switches for every `@UseDataSource`.
+
+```java
+@Aspect
+@Component
+public class DataSourceAspect {
+
+    @Around("@annotation(useDataSource)")
+    public Object switchDataSource(ProceedingJoinPoint joinPoint, UseDataSource useDataSource) throws Throwable {
+        try {
+            DataSourceContextHolder.set(useDataSource.value());  // Set new DB source
+            return joinPoint.proceed();
+        } finally {
+            DataSourceContextHolder.clear();  // Reset to default after execution
+        }
+    }
+}
+```
+
+---
+
+### **3️⃣ Modify Repository to Use New Transactions**
+Your **repositories remain the same**, but now the data source will actually switch when a new transaction is started.
+
+```java
+@Repository
+public interface AppSettingRepo extends JpaRepository<AppSetting, Long> {
+
+    @UseDataSource(DataSourceType.READ)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    Optional<AppSetting> findById(Long id);
+
+    @UseDataSource(DataSourceType.WRITE)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    AppSetting save(AppSetting appSetting);
+}
+```
+
+---
+
+### **4️⃣ Force Rollback of Transactions When Required**
+Ensure rollback works properly when an exception occurs.
+
+```java
+@Service
+public class AppService {
+
+    @Autowired
+    private AppSettingRepo appSettingRepo;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @Transactional
+    public void testSaveAndRollback(Long id, AppSetting appSetting) {
+        Optional<AppSetting> app = appSettingRepo.findById(id);
+        if (app.isEmpty()) {
+            System.out.println("Not Found and Saving");
+
+            AppSetting ss = appSettingRepo.save(appSetting);
+            System.out.println("Saving User");
+
+            try {
+                User user = new User();  // Intentionally causing an error
+                userRepository.save(user);
+            } catch (Exception e) {
+                throw new RuntimeException("Forcing rollback", e);
+            }
+
+            return;
+        } else {
+            System.out.println("Found and returning");
+        }
+    }
+}
+```
+
+---
+
+## **🎯 Expected Behavior**
+| Action | DataSource Used | Transaction Behavior |
+|--------|---------------|----------------------|
+| `appSettingRepo.findById(id)` | **READ Replica** | New transaction (does not affect writes) |
+| `appSettingRepo.save(appSetting)` | **WRITE DB** | New transaction |
+| `userRepository.save(user)` fails | **WRITE DB** | Rolls back `appSettingRepo.save()` but not `findById()` |
+
+Now, if an exception occurs during the user save operation:
+1. The **write transaction** for `appSettingRepo.save(appSetting)` **rolls back**.
+2. The **read transaction** (`appSettingRepo.findById(id)`) **remains unaffected**.
+
+---
+
+## **✅ Key Benefits**
+✔ **Read and Write use the same repository**
+✔ **Each transaction switches the data source correctly**
+✔ **Rollback works as expected for writes**
+✔ **Read operations do not get affected by write failures**
+
+---
+
+This should work exactly as you expect—try it out and let me know if you need further refinements! 🚀

@@ -27,61 +27,63 @@ import java.util.Objects;
  * Created by Sherif.Abdulraheem 2/6/2025 - 10:44 AM
  **/
 
-@Configuration
-@EnableTransactionManagement
-@EnableJpaRepositories(
-        basePackages = "com.example.read_write_db.repo",
-        entityManagerFactoryRef = "primaryEntityManagerFactory",
-        transactionManagerRef = "primaryTransactionManager"
-)
+//@Configuration
+//@EnableTransactionManagement
+//@EnableJpaRepositories(
+//        basePackages = "com.example.read_write_db.repo",
+//        entityManagerFactoryRef = "primaryEntityManagerFactory",
+//        transactionManagerRef = "primaryTransactionManager"
+//)
 @Slf4j
 public class JpaConfig {
 
-    @Primary
-    @Bean(name = "writeDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.hikari.write")
-    public DataSource writeDataSource() {
-        return DataSourceBuilder.create(HikariDataSource.class.getClassLoader()).build();
-    }
-
-    @Bean(name = "readDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.hikari.read")
-    public DataSource readDataSource() {
-        return DataSourceBuilder.create(HikariDataSource.class.getClassLoader()).build();
-    }
-
-
-    @Bean(name = "dataSource")
-    public DataSource routingDataSource(@Qualifier("writeDataSource") DataSource writeDataSource,
-                                        @Qualifier("readDataSource") DataSource readDataSource) {
-        Map<Object, Object> targetDataSources = new HashMap<>();
-        targetDataSources.put(DataSourceType.WRITE, writeDataSource);
-        targetDataSources.put(DataSourceType.READ, readDataSource);
-
-        RoutingDataSource routingDataSource = new RoutingDataSource();
-        routingDataSource.setDefaultTargetDataSource(writeDataSource); // Default is write
-        routingDataSource.setTargetDataSources(targetDataSources);
-        return routingDataSource;
-    }
-
-    @Primary
-    @Bean(name = "primaryEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory(
-            EntityManagerFactoryBuilder builder,
-            @Qualifier("dataSource") DataSource writeDataSource) {
-        return builder
-                .dataSource(writeDataSource)
-                .packages("com.example.read_write_db.model") // Update with your entity package
-                .persistenceUnit("writePU")
-                .build();
-    }
-
-    @Primary
-    @Bean(name = "primaryTransactionManager")
-    public PlatformTransactionManager primaryTransactionManager(
-            @Qualifier("primaryEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        return new JpaTransactionManager(Objects.requireNonNull(entityManagerFactory));
-    }
+//    @Primary
+//    @Bean(name = "writeDataSource")
+//    @ConfigurationProperties(prefix = "spring.datasource.hikari.write")
+//    public DataSource writeDataSource() {
+//        return DataSourceBuilder.create(HikariDataSource.class.getClassLoader()).build();
+//    }
+//
+//    @Bean(name = "readDataSource")
+//    @ConfigurationProperties(prefix = "spring.datasource.hikari.read")
+//    public DataSource readDataSource() {
+//        return DataSourceBuilder.create(HikariDataSource.class.getClassLoader()).build();
+//    }
+//
+//
+//    @Bean(name = "dataSource")
+//    public DataSource routingDataSource(@Qualifier("writeDataSource") DataSource writeDataSource,
+//                                        @Qualifier("readDataSource") DataSource readDataSource) {
+//        Map<Object, Object> targetDataSources = new HashMap<>();
+//        targetDataSources.put(DataSourceType.WRITE, writeDataSource);
+//        targetDataSources.put(DataSourceType.READ, readDataSource);
+//        //set a default context
+//        DatabaseContextHolder.set(DataSourceType.WRITE);
+//
+//        RoutingDataSource routingDataSource = new RoutingDataSource();
+//        routingDataSource.setDefaultTargetDataSource(writeDataSource); // Default is write
+//        routingDataSource.setTargetDataSources(targetDataSources);
+//        return routingDataSource;
+//    }
+//
+//    @Primary
+//    @Bean(name = "primaryEntityManagerFactory")
+//    public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory(
+//            EntityManagerFactoryBuilder builder,
+//            @Qualifier("dataSource") DataSource writeDataSource) {
+//        return builder
+//                .dataSource(writeDataSource)
+//                .packages("com.example.read_write_db.model") // Update with your entity package
+//                .persistenceUnit("writePU")
+//                .build();
+//    }
+//
+//    @Primary
+//    @Bean(name = "primaryTransactionManager")
+//    public PlatformTransactionManager primaryTransactionManager(
+//            @Qualifier("primaryEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+//        return new JpaTransactionManager(Objects.requireNonNull(entityManagerFactory));
+//    }
 
 
 
