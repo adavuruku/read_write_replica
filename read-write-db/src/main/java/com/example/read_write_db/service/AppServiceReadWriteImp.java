@@ -7,6 +7,7 @@ import com.example.read_write_db.repo.read.AppSettingReadRepo;
 import com.example.read_write_db.repo.read.UserReadRepo;
 import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -18,8 +19,7 @@ import java.util.Optional;
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:54 PM
  **/
 @Service
-//@AllArgsConstructor
-//@Transactional
+@Slf4j
 public class AppServiceReadWriteImp implements AppService {
     private final AppSettingRepo appSettingRepo;
     private final UserRepo userRepository;
@@ -53,8 +53,7 @@ public class AppServiceReadWriteImp implements AppService {
     @Transactional
     public Optional<AppSetting> getAppSetting(Long id) {
         boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
-        System.out.println("Transaction is read-only: " + isReadOnly);
-
+        log.info("Transaction is read-only: " + isReadOnly);
         return appSettingReadRepo.findById(id);
     }
 
@@ -62,35 +61,75 @@ public class AppServiceReadWriteImp implements AppService {
     public AppSetting findOrSave(Long id, AppSetting appSetting) {
         Optional<AppSetting> app = appSettingReadRepo.findById(id);
         if(app.isEmpty()){
-            System.out.println("Not Found and Saving");
+            log.info("Not Found and Saving");
             AppSetting SS = appSettingRepo.save(appSetting);
-            System.out.println("Saving AppSetting");
+            log.info("Saving AppSetting");
             return SS;
         }else {
-            System.out.println(" Found and returning");
+            log.info(" Found and returning");
             return app.get();
         }
     }
 
     @Transactional
-    public AppSetting testSaveAndRoleBack(Long id, AppSetting appSetting) {
+    public AppSetting testSaveAndAutomaticRollBack(Long id, AppSetting appSetting) {
         Optional<AppSetting> app = appSettingReadRepo.findById(id);
         if(app.isEmpty()){
 
-            System.out.println("Not Found and Saving");
+            log.info("Not Found and Saving");
+            AppSetting appSetting1 = appSettingRepo.save(appSetting);
+            log.info("Saving User");
 
-            AppSetting SS = appSettingRepo.save(appSetting);
-            System.out.println("Saving User");
-
-            User user = User.builder().firstName("Peters").country("UG").build();
+            //user cannot save because firstName is required, transaction should aut roll back
+            User user = User.builder().country("UG").build();
             userRepository.save(user);
 
-            // TO Manually mark transaction for rollback
-//            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-
-            return SS;
+            return appSetting1;
         }else {
-            System.out.println(" Found and returning");
+            log.info(" Found and returning");
+            return app.get();
+        }
+    }
+
+    @Transactional
+    public AppSetting testReadFetchAndUpdate(Long id, AppSetting appSetting) {
+        Optional<AppSetting> app = appSettingReadRepo.findById(id);
+        if(app.isPresent()){
+
+            log.info("Found and Updating AppSetting ");
+            AppSetting appSetting1 = app.get();
+            appSetting1.setDescription(appSetting.getDescription());
+            return appSettingRepo.save(appSetting1);
+        }else {
+            log.info(" Found and returning");
+            return app.get();
+        }
+    }
+
+
+    @Transactional
+    public AppSetting testSaveAndManualRollBack(Long id, AppSetting appSetting) {
+        Optional<AppSetting> app = appSettingReadRepo.findById(id);
+        if(app.isEmpty()){
+
+            log.info("Saving AppSetting");
+            AppSetting appSetting1 = appSettingRepo.save(appSetting);
+
+            log.info("Saving User");
+            User user = User.builder().firstName("Peters - ".concat(appSetting1.getId().toString())).country("UG").build();
+            userRepository.save(user);
+
+            app = appSettingReadRepo.findById(appSetting1.getId());
+            if(app.isEmpty()){
+                log.info("Rolling back all CUD transaction because {} Not found", appSetting1.getId());
+                // TO Manually mark transaction for rollback
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            }
+
+
+            return appSetting1;
+        }else {
+            log.info(" Found and returning");
             return app.get();
         }
     }

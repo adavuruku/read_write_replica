@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,18 +36,28 @@ public class ApiV2 {
         return appSetting.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PostMapping
+    public ResponseEntity<AppSetting> createApp(@RequestBody AppSettingDto appSettingDto){
+        return ResponseEntity.ok(appServiceReadWriteImp.createSetting(appSettingDto));
+    }
+
     @PostMapping("/find-save/{id}")
     public ResponseEntity<AppSetting> findOrSave(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
         return ResponseEntity.ok(appServiceReadWriteImp.findOrSave(id, appSetting));
     }
 
-    @PostMapping("/save/{id}")
-    public ResponseEntity<AppSetting> findOrSaveTransaction(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
-        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndRoleBack(id, appSetting));
+    @PostMapping("/aut-rollback/{id}")
+    public ResponseEntity<AppSetting> findOrSaveTransactionAutRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
+        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndAutomaticRollBack(id, appSetting));
     }
 
-    @PostMapping
-    public ResponseEntity<AppSetting> createApp(@RequestBody AppSettingDto appSettingDto){
-        return ResponseEntity.ok(appServiceReadWriteImp.createSetting(appSettingDto));
+    @PostMapping("/manual-rollback/{id}")
+    public ResponseEntity<AppSetting> findOrSaveTransactionManualRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
+        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndAutomaticRollBack(id, appSetting));
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<AppSetting> findAndUpdateTransaction(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
+        return ResponseEntity.ok(appServiceReadWriteImp.testReadFetchAndUpdate(id, appSetting));
     }
 }
