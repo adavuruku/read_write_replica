@@ -31,7 +31,6 @@ public class ApiV2 {
 
     @GetMapping("/{id}")
     public ResponseEntity<AppSetting> getAppSetting(@PathVariable Long id) {
-        log.info("controller: get app setting by id {}", id);
         Optional<AppSetting> appSetting = appServiceReadWriteImp.getAppSetting(id);
         return appSetting.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -53,7 +52,12 @@ public class ApiV2 {
 
     @PostMapping("/manual-rollback/{id}")
     public ResponseEntity<AppSetting> findOrSaveTransactionManualRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
-        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndAutomaticRollBack(id, appSetting));
+        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndManualRollBack(id, appSetting));
+    }
+
+    @PostMapping("/ex-rollback/{id}")
+    public ResponseEntity<AppSetting> findOrSaveTransactionExceptionRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
+        return ResponseEntity.ok(appServiceReadWriteImp.testSaveAndManualException(id, appSetting));
     }
 
     @PutMapping("/update/{id}")

@@ -8,6 +8,7 @@ import com.example.read_write_db.repo.read.UserReadRepo;
 import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -52,8 +53,6 @@ public class AppServiceReadWriteImp implements AppService {
     @Override
     @Transactional
     public Optional<AppSetting> getAppSetting(Long id) {
-        boolean isReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
-        log.info("Transaction is read-only: " + isReadOnly);
         return appSettingReadRepo.findById(id);
     }
 
@@ -131,6 +130,37 @@ public class AppServiceReadWriteImp implements AppService {
         }else {
             log.info(" Found and returning");
             return app.get();
+        }
+    }
+
+    @Transactional
+    public AppSetting testSaveAndManualException(Long id, AppSetting appSetting) {
+        try {
+            Optional<AppSetting> app = appSettingReadRepo.findById(id);
+            if (app.isEmpty()) {
+
+                log.info("Saving AppSetting");
+                AppSetting appSetting1 = appSettingRepo.save(appSetting);
+
+                log.info("Saving User");
+                User user = User.builder().firstName("John K - ".concat(appSetting1.getId().toString())).country("UG").build();
+                userRepository.save(user);
+
+                app = appSettingReadRepo.findById(appSetting1.getId());
+                if (app.isEmpty()) {
+                    log.info("Rolling back all CUD transaction because {} Not found", appSetting1.getId());
+                    // TO Manually mark transaction for rollback
+                    throw new NullPointerException();
+                }
+                return appSetting1;
+            } else {
+                log.info(" Found and returning");
+                return app.get();
+            }
+        }catch (Exception e){
+            log.info("Message {}", e.getMessage());
+            throw e;
+//            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
         }
     }
 }
