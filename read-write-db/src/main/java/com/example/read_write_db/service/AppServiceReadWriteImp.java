@@ -1,6 +1,7 @@
 package com.example.read_write_db.service;
 
 import com.example.read_write_db.dto.AppSettingDto;
+import com.example.read_write_db.event.CDCEventPublisher;
 import com.example.read_write_db.model.AppSetting;
 import com.example.read_write_db.model.User;
 import com.example.read_write_db.repo.read.AppSettingReadRepo;
@@ -26,13 +27,16 @@ public class AppServiceReadWriteImp implements AppService {
     private final UserRepo userRepository;
     private final AppSettingReadRepo appSettingReadRepo;
     private final UserReadRepo userReadRepo;
+    private final CDCEventPublisher cdcEventPublisher;
 
     public AppServiceReadWriteImp(AppSettingRepo appSettingRepo, UserRepo userRepository,
-                                  AppSettingReadRepo appSettingReadRepo, UserReadRepo userReadRepo) {
+                                  AppSettingReadRepo appSettingReadRepo, UserReadRepo userReadRepo,
+                                  CDCEventPublisher cdcEventPublisher) {
         this.appSettingRepo = appSettingRepo;
         this.userRepository = userRepository;
         this.appSettingReadRepo = appSettingReadRepo;
         this.userReadRepo = userReadRepo;
+        this.cdcEventPublisher = cdcEventPublisher;
     }
 
 

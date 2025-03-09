@@ -1,5 +1,7 @@
 package com.example.read_write_db.commands;
 
+import jakarta.annotation.PostConstruct;
+import org.springframework.shell.context.InteractionMode;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -47,7 +49,7 @@ public class ShellCommands {
      *
      *  )
      */
-    @ShellMethod(key = "show_books", value = "Show all books")
+    @ShellMethod(key = "show_books", value = "Show all books", interactionMode = InteractionMode.INTERACTIVE)
     public void showBooks() {
         System.out.println("Show Books");
     }
@@ -76,6 +78,11 @@ public class ShellCommands {
      */
     @ShellMethod(key = "show_other_methods", value = "Show other methods")
     public String showOtherMethods(@ShellOption(defaultValue = "def") String name) {
-        return "Show other methods";
+        return "Show other methods " + name;
+    }
+
+    @PostConstruct
+    public void init() {
+        showOtherMethods("sherif");
     }
 }
