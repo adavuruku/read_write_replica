@@ -2,20 +2,24 @@ package com.example.read_write_db.service;
 
 import com.example.read_write_db.dto.AppSettingDto;
 import com.example.read_write_db.event.CDCEventPublisher;
+import com.example.read_write_db.event.ExportedEvent;
 import com.example.read_write_db.event.type.AppSettingCreatedEvent;
 import com.example.read_write_db.event.type.UserRegisteredEvent;
 import com.example.read_write_db.model.AppSetting;
+import com.example.read_write_db.model.OutboxEvent;
 import com.example.read_write_db.model.User;
 import com.example.read_write_db.repo.read.AppSettingReadRepo;
 import com.example.read_write_db.repo.read.UserReadRepo;
 import com.example.read_write_db.repo.write.AppSettingRepo;
+import com.example.read_write_db.repo.write.OutboxEventRepo;
 import com.example.read_write_db.repo.write.UserRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:54 PM
@@ -28,19 +32,21 @@ public class EventService  {
     private final AppSettingReadRepo appSettingReadRepo;
     private final UserReadRepo userReadRepo;
     private final CDCEventPublisher cdcEventPublisher;
+    private final OutboxEventRepo outboxEvents;
 
     public EventService(AppSettingRepo appSettingRepo, UserRepo userRepository,
                         AppSettingReadRepo appSettingReadRepo, UserReadRepo userReadRepo,
-                        CDCEventPublisher cdcEventPublisher) {
+                        CDCEventPublisher cdcEventPublisher, OutboxEventRepo outboxEvents) {
         this.appSettingRepo = appSettingRepo;
         this.userRepository = userRepository;
         this.appSettingReadRepo = appSettingReadRepo;
         this.userReadRepo = userReadRepo;
         this.cdcEventPublisher = cdcEventPublisher;
+        this.outboxEvents = outboxEvents;
     }
 
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED )
     public AppSetting createSetting(AppSettingDto appSettingDto) {
 
         AppSetting appSetting = appSettingRepo.save(AppSetting.builder()
@@ -49,9 +55,7 @@ public class EventService  {
         AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
                 null, appSetting.getDescription(), appSetting.getId()
         );
-
-        //events are published at the end of transaction
-        cdcEventPublisher.publish(appSettingCreatedEvent);
+        outboxEvents.save(of(appSettingCreatedEvent));
         return appSetting;
     }
 
@@ -77,9 +81,39 @@ public class EventService  {
         );
 
         //events are published at the end of transaction
-        cdcEventPublisher.publish(userRegisteredEvent);
-        cdcEventPublisher.publish(appSettingCreatedEvent);
+//        cdcEventPublisher.publish(userRegisteredEvent);
+//        cdcEventPublisher.publish(appSettingCreatedEvent);
+        publish(userRegisteredEvent);
+        publish(appSettingCreatedEvent);
         return appSettingSaved;
+    }
+
+
+
+
+    private void publish(ExportedEvent exportedEvent) {
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .id(UUID.randomUUID())
+                .aggregateId(exportedEvent.getAggregateId())
+                .aggregateType(exportedEvent.getAggregateType())
+                .type(exportedEvent.getType())
+                .timestamp(exportedEvent.getTimestamp())
+                .payload(exportedEvent.getPayload()).build();
+
+        outboxEvents.save(outboxEvent);
+//        outboxEvents.delete(outboxEventSaved);
+
+    }
+
+    private static OutboxEvent of(ExportedEvent exportedEvent) {
+        return OutboxEvent.builder()
+//                .id(UUID.randomUUID())
+                .aggregateId(exportedEvent.getAggregateId())
+                .aggregateType(exportedEvent.getAggregateType())
+                .type(exportedEvent.getType())
+                .timestamp(exportedEvent.getTimestamp())
+                .payload(exportedEvent.getPayload()).build();
+
     }
 
 

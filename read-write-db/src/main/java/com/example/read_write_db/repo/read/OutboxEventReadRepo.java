@@ -1,4 +1,4 @@
-package com.example.read_write_db.repo.write;
+package com.example.read_write_db.repo.read;
 
 
 import com.example.read_write_db.model.OutboxEvent;
@@ -11,5 +11,5 @@ import java.util.UUID;
  * Created by Sherif.Abdulraheem 3/8/2025 - 4:55 PM
  **/
 @Repository
-public interface OutboxEvents extends JpaRepository<OutboxEvent, UUID> {
+public interface OutboxEventReadRepo extends JpaRepository<OutboxEvent, UUID> {
 }

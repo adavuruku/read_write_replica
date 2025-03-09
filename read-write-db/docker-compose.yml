@@ -17,21 +17,23 @@ services:
     volumes:
       - db-write:/var/lib/postgresql/data
     command: >
-      postgres -c wal_level=replica
+      postgres -c wal_level=logical
                -c max_wal_senders=5
-               -c hot_standby=on
+               -c max_replication_slots=5
+               -c hot_standby=off
 
-  # install zookeeper
   zookeeper:
     container_name: zookeeper
-    image: zookeeper
+    image: confluentinc/cp-zookeeper:7.0.1
     ports:
-      - 2181:2181
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
-  # install kafka
   kafka:
     container_name: kafka
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-server:7.0.1
     hostname: kafka
     ports:
       - "9092:9092"
@@ -46,34 +48,30 @@ services:
     depends_on:
       - zookeeper
 
-  # install debezium connect
   debezium-connect:
-    container_name: custom-debezium-connect
-    image: custom-debezium-connect
-    hostname: debezium-connect
+    container_name: debezium-connect
+    image: debezium/connect:2.5
     ports:
       - "8083:8083"
     environment:
+      BOOTSTRAP_SERVERS: kafka:29092
       GROUP_ID: 1
       CONFIG_STORAGE_TOPIC: debezium_connect_config
       OFFSET_STORAGE_TOPIC: debezium_connect_offsets
       STATUS_STORAGE_TOPIC: debezium_connect_status
-      BOOTSTRAP_SERVERS: kafka:29092
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
     depends_on:
       - kafka
       - postgres-write
 
-  # Build custom-debezium-connect. create single topic to stream events
   create-topics:
-    image: custom-debezium-connect
-    command: bash -c "
-      docker exec -t kafka /usr/bin/kafka-topics \
-      --create --bootstrap-server :9092 \
-      --topic ReadWrite.events \
-      --partitions 1 \
-      --replication-factor 1"
+    image: confluentinc/cp-kafka:latest
     depends_on:
       - kafka
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: |
+      /usr/bin/kafka-topics --create --bootstrap-server kafka:29092 --topic ReadWrite.event --partitions 1 --replication-factor 1
 
   postgres-read:
     image: postgres:14-alpine
