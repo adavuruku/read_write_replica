@@ -16,10 +16,10 @@ public class AppSettingCreatedEvent implements ExportedEvent {
 
     private final long id;
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final JsonNode payload;
+    private final String payload;
     private final Instant timestamp;
 
-    public AppSettingCreatedEvent(long id, JsonNode payload) {
+    public AppSettingCreatedEvent(long id, String payload) {
         this.id = id;
         this.payload = payload;
         this.timestamp = Instant.now();
@@ -32,7 +32,8 @@ public class AppSettingCreatedEvent implements ExportedEvent {
                 .put("firstName", firstName)
                 .put("userId", id)
                 .put("description", description);
-        return new AppSettingCreatedEvent(id, asJson);
+        String jsonString = asJson.toString();
+        return new AppSettingCreatedEvent(id, jsonString);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class AppSettingCreatedEvent implements ExportedEvent {
 
     @Override
     public String getAggregateType() {
-        return "ReadWrite";
+        return "ReadWrite.event";
     }
 
     @Override
@@ -56,7 +57,7 @@ public class AppSettingCreatedEvent implements ExportedEvent {
     }
 
     @Override
-    public JsonNode getPayload() {
+    public String getPayload() {
         return payload;
     }
 }

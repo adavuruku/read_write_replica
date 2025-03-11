@@ -46,7 +46,8 @@ public class EventService  {
     }
 
 
-    @Transactional(isolation = Isolation.READ_COMMITTED )
+//    @Transactional(isolation = Isolation.READ_COMMITTED )
+    @Transactional
     public AppSetting createSetting(AppSettingDto appSettingDto) {
 
         AppSetting appSetting = appSettingRepo.save(AppSetting.builder()
@@ -56,6 +57,7 @@ public class EventService  {
                 null, appSetting.getDescription(), appSetting.getId()
         );
         outboxEvents.save(of(appSettingCreatedEvent));
+//        outboxEvents.delete(outboxEvent);
         return appSetting;
     }
 

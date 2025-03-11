@@ -1,0 +1,81 @@
+docker network inspect microservices | grep postgres-write
+
+//add a container to network
+
+publish to default topic naming
+
+{
+    "name": "outbox-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "postgres-write",
+        "database.port": "5432",
+        "database.user": "root",
+        "database.password": "secret",
+        "database.dbname": "db_write",
+        "database.server.name": "outbox-events",
+        "schema.whitelist": "public",
+        "table.whitelist": "public.outbox_events",
+        "table.include.list": "public.outbox_events",
+        "slot.name": "outbox_slot",
+        "publication.name": "outbox_publication",
+        "plugin.name": "pgoutput",
+        "topic.prefix": "outbox-events",
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "key.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+        "tombstone.on.delete": "false",
+        "transforms": "unwrap",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.unwrap.add.fields": "op,source.ts_ms",
+        "include.schema.changes": "false",
+        "slot.drop.on.stop": "true",
+        "name": "outbox-connector"
+    },
+    "tasks": [],
+    "type": "source"
+}
+
+#route to a static topic
+
+{
+    "name": "outbox-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "postgres-write",
+        "database.port": "5432",
+        "database.user": "root",
+        "database.password": "secret",
+        "database.dbname": "db_write",
+        "database.server.name": "outbox-events",
+        "schema.whitelist": "public",
+        "table.include.list": "public.outbox_events",
+        "slot.name": "outbox_slot",
+        "publication.name": "outbox_publication",
+        "plugin.name": "pgoutput",
+        "topic.prefix": "outbox-events",
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "key.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+        "tombstone.on.delete": "false",
+        "transforms": "unwrap,route",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.unwrap.add.fields": "op,source.ts_ms",
+
+        "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+        "transforms.route.regex": ".*",
+        "transforms.route.replacement": "ReadWrite.event",
+
+        "include.schema.changes": "false",
+        "slot.drop.on.stop": "true",
+        "name": "outbox-connector"
+    },
+    "tasks": [],
+    "type": "source"
+}
+
+#route from the fieldname
+
+#filter

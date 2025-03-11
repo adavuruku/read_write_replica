@@ -3,7 +3,6 @@ package com.example.read_write_db.model;
 import com.example.read_write_db.repo.converter.JsonNodeConverter;
 import com.example.read_write_db.repo.converter.JsonNodeToStringConverter;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -66,7 +65,6 @@ public class OutboxEvent { // Configure and ensure binlog retention is not too s
 
 //    @Convert(converter = JsonNodeConverter.class) // Apply the converter
 //    @Column(name = "payload", columnDefinition = "jsonb")
-
     @Column(name = "payload")
     String payload;
 

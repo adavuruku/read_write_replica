@@ -49,5 +49,5 @@ public interface ExportedEvent {
     /**
      * The actual event payload as a valid JSON string.
      */
-    JsonNode getPayload();
+    String getPayload();
 }

@@ -14,10 +14,10 @@ public class UserRegisteredEvent implements ExportedEvent {
 
     private final long id;
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final JsonNode payload;
+    private final String payload;
     private final Instant timestamp;
 
-    public UserRegisteredEvent(long id, JsonNode payload) {
+    public UserRegisteredEvent(long id, String payload) {
         this.id = id;
         this.payload = payload;
         this.timestamp = Instant.now();
@@ -31,7 +31,8 @@ public class UserRegisteredEvent implements ExportedEvent {
                 .put("country", country)
                 .put("city", city)
                 .put("userId", id);
-        return new UserRegisteredEvent(id, asJson);
+        String jsonString = asJson.toString();
+        return new UserRegisteredEvent(id, jsonString);
     }
 
     @Override
@@ -41,7 +42,7 @@ public class UserRegisteredEvent implements ExportedEvent {
 
     @Override
     public String getAggregateType() {
-        return "ReadWrite";
+        return "ReadWrite.event";
     }
 
     @Override
@@ -55,7 +56,7 @@ public class UserRegisteredEvent implements ExportedEvent {
     }
 
     @Override
-    public JsonNode getPayload() {
+    public String getPayload() {
         return payload;
     }
 }
