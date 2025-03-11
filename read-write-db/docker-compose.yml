@@ -80,9 +80,6 @@ services:
   debezium-connect:
     container_name: debezium-connect
     hostname: debezium-connect
-#    build:
-#      context: .
-#      dockerfile: Dockerfile  # Use the custom Dockerfile
     image: debezium/connect:2.5
     ports:
       - "8083:8083"
@@ -97,12 +94,6 @@ services:
       CONNECT_PLUGIN_PATH: "/kafka/connect,/kafka/connect/debezium-transformer"
     volumes:
       - ~/debezium-custom-plugins:/kafka/connect/debezium-transformer
-#    command:
-#        - bash
-#        - -c
-#        - |
-#          cp /kafka/connect/debezium-transformer/*.jar /kafka/connect/ &&
-#          /docker-entrypoint.sh start
     networks: [ "microservices" ]
     depends_on:
       - kafka

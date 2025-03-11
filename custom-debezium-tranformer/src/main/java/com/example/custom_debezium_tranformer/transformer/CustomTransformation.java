@@ -42,7 +42,7 @@ public class CustomTransformation<R extends ConnectRecord<R>> implements Transfo
 //            sourceRecord = sourceRecord.newRecord( topic, partition, keySchema, key, valueSchema, value, timestamp, header)
 
             sourceRecord = sourceRecord.newRecord(
-                    eventTopic, null, Schema.STRING_SCHEMA, aggregateId, null, payload, sourceRecord.timestamp(), headers
+                    eventTopic, null, Schema.INT64_SCHEMA, aggregateId, null, payload, sourceRecord.timestamp(), headers
             );
 
 
