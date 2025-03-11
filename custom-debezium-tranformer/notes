@@ -1,0 +1,70 @@
+📌 Explanation of sourceRecord.newRecord(...) Parameters
+This method creates a new Kafka record with modified values such as the topic name, key, value, timestamp, and headers.
+
+📌 Full Method Signature
+sourceRecord.newRecord(topic, partition, keySchema, key, valueSchema, value, timestamp, headers);
+Parameter	Value Used	Explanation
+topic	topic	The Kafka topic name (dynamically set based on eventType).
+partition	null	Kafka automatically assigns the partition (default behavior).
+keySchema	Schema.STRING_SCHEMA	The key format is a String (UUID in this case).
+key	UUID	The key for partitioning, set to the UUID from the record.
+valueSchema	null	Schema is not explicitly defined, assuming JSON format.
+value	payload	The actual event data from the database (JSON format).
+timestamp	sourceRecord.timestamp()	Keeps the original event timestamp.
+headers	headers	Includes additional metadata (e.g., "eventId" header).
+📌 Breakdown with Example
+Original Debezium Message
+Debezium reads from PostgreSQL public.outbox and produces this raw event:
+
+{
+  "op": "c",
+  "after": {
+    "uuid": "12345",
+    "payload": "{\"userId\":10,\"action\":\"REGISTER\"}",
+    "event_type": "user_created"
+  }
+}
+Processing in CustomTransformation
+Extract Data from after
+String UUID = after.getString("uuid");  // "12345"
+String payload = after.getString("payload");  // {"userId":10,"action":"REGISTER"}
+String eventType = after.getString("event_type").toLowerCase();  // "user_created"
+String topic = eventType.toLowerCase();  // "user_created"
+Modify Kafka Headers
+headers.addString("eventId", UUID);
+Create a New Kafka Record
+sourceRecord = sourceRecord.newRecord(
+    topic,                     // "user_created"
+    null,                      // Kafka chooses partition
+    Schema.STRING_SCHEMA,      // Key schema: String
+    UUID,                      // Key: "12345"
+    null,                      // Value schema: JSON (null schema)
+    payload,                   // JSON payload
+    sourceRecord.timestamp(),  // Original timestamp
+    headers                    // Custom headers
+);
+Final Kafka Event Sent
+Kafka produces the event to topic = user_created:
+
+{
+  "key": "12345",
+  "value": {
+    "userId": 10,
+    "action": "REGISTER"
+  },
+  "headers": {
+    "eventId": "12345"
+  },
+  "timestamp": "2025-03-06T12:00:00Z"
+}
+✅ Key Takeaways
+Dynamically routes the message to a Kafka topic based on event_type.
+Uses UUID as the partition key for consistent ordering.
+Keeps the event timestamp for tracking.
+Adds metadata headers (eventId).
+Let me know if you need further clarification! 🚀
+
+chmod -R 777  custom-debezium-tranformer-0.0.1.jar
+sherifabdulraheem@Sherifs-MacBook-Pro read-write-db % docker cp custom-debezium-tranformer-0.0.1.jar debezium-connect:/kafka/connect/debezium-transformer/
+
+cp /kafka/connect/debezium-transformer/custom-debezium-tranformer-0.0.1.jar /kafka/connect/

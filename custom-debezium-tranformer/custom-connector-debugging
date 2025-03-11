@@ -1,0 +1,425 @@
+connect github https://github.com/apache/kafka/blob/trunk/connect/api/src/main/java/org/apache/kafka/connect/transforms/Transformation.java
+
+
+
+### **🔹 Adding Kafka Connect Transformation to META-INF Services**
+Your issue might be that **Kafka Connect is not discovering your transformation class** because it requires proper **Service Provider Configuration**.
+
+---
+
+### **📌 Step 1: Add `META-INF/services` File**
+You need to create a **service provider configuration file** so Kafka Connect can discover your transformation.
+
+1️⃣ Inside your project, create the following directory structure:
+```
+src/main/resources/META-INF/services/
+```
+
+2️⃣ Inside `META-INF/services/`, create a file named:
+```
+org.apache.kafka.connect.transforms.Transformation
+```
+
+3️⃣ Open the file and add the fully qualified name of your transformation class:
+```
+com.example.custom_debezium_tranformer.transformer.CustomTransformation
+```
+
+---
+
+### **📌 Step 2: Rebuild Your JAR**
+After adding the service configuration, rebuild your JAR:
+```sh
+mvn clean package
+```
+
+Or if using Gradle:
+```sh
+gradle clean build
+```
+
+---
+
+### **📌 Step 3: Copy JAR to Kafka Connect**
+Copy your newly built JAR to the Kafka Connect container:
+```sh
+docker cp target/custom-debezium-transformer-0.0.1.jar debezium-connect:/kafka/connect/debezium-transformer/
+```
+
+Ensure it's there:
+```sh
+docker exec -it debezium-connect ls -l /kafka/connect/debezium-transformer/
+```
+
+---
+
+### **📌 Step 4: Restart Kafka Connect**
+Restart the Kafka Connect container to reload the plugins:
+```sh
+docker restart debezium-connect
+```
+
+Then check available plugins:
+```sh
+curl -s http://localhost:8083/connector-plugins | jq .
+```
+Your transformation should now be listed.
+
+---
+
+### **📌 Step 5: Register the Connector**
+If your transformation is discovered, re-register your Kafka Connect config:
+```sh
+curl -X POST -H "Content-Type: application/json" --data @register.json http://localhost:8083/connectors
+```
+
+---
+
+### **🎯 Expected Fix**
+✅ **Kafka Connect recognizes your custom transformation**
+✅ **No more `Class Not Found` errors**
+✅ **Transformation appears in `connector-plugins` API**
+
+Try this out and let me know what happens! 🚀
+
+
+
+It looks like you're referring to how Kafka Connect transformations can be discovered and monitored. Here’s what you need to do:
+
+---
+
+### **✅ Steps to Fix and Register Your Kafka Connect Custom Transformation**
+
+#### **1️⃣ Ensure Proper Service Loader Configuration**
+Kafka Connect **discovers transformations** using the Java **Service Provider Interface (SPI)** mechanism. You need to **explicitly register your transformation class**.
+
+📌 **Create a service configuration file**:
+Place this file in your project at:
+```
+src/main/resources/META-INF/services/org.apache.kafka.connect.transforms.Transformation
+```
+Inside the file, add:
+```
+com.example.custom_debezium_tranformer.transformer.CustomTransformation
+```
+This tells Kafka Connect that your transformation class exists.
+
+---
+
+#### **2️⃣ Implement the Kafka Connect Transformation Interface Properly**
+Modify your class to ensure it's correctly implementing the `Transformation` interface:
+```java
+package com.example.custom_debezium_tranformer.transformer;
+
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.connect.connector.ConnectRecord;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.header.Headers;
+import org.apache.kafka.connect.transforms.Transformation;
+import org.apache.kafka.common.metrics.Monitorable;
+import java.util.Map;
+
+public class CustomTransformation<R extends ConnectRecord<R>> implements Transformation<R>, Monitorable {
+
+    @Override
+    public R apply(R sourceRecord) {
+        if (sourceRecord.value() instanceof org.apache.kafka.connect.data.Struct) {
+            Struct kstruct = (Struct) sourceRecord.value();
+            String dbOperation = kstruct.getString("op");
+
+            if ("c".equalsIgnoreCase(dbOperation)) {
+                Struct after = (Struct) kstruct.get("after");
+                String eventId = after.getString("id");
+                String eventTopic = after.getString("aggregate_type");
+                String eventType = after.getString("type").toLowerCase();
+                Long aggregateId = after.getInt64("aggregate_id");
+                String payload = after.getString("payload");
+
+                Headers headers = sourceRecord.headers();
+                headers.addString("eventId", eventId);
+                headers.addString("eventType", eventType);
+
+                return sourceRecord.newRecord(
+                        eventTopic, null, Schema.STRING_SCHEMA, aggregateId,
+                        null, payload, sourceRecord.timestamp(), headers
+                );
+            }
+        }
+        return sourceRecord;
+    }
+
+    @Override
+    public ConfigDef config() {
+        return new ConfigDef();
+    }
+
+    @Override
+    public void close() {}
+
+    @Override
+    public void configure(Map<String, ?> configs) {}
+
+    @Override
+    public String getGroupName() {
+        return "custom-transformer-group";
+    }
+}
+```
+🚀 **What Changed?**
+- ✅ Implemented `Monitorable` to allow Kafka Connect to track metrics.
+- ✅ Ensured safe type casting using `instanceof`.
+- ✅ Fixed the structure of the transformation.
+
+---
+
+#### **3️⃣ Build and Deploy the JAR**
+Run:
+```sh
+mvn clean package
+```
+Or:
+```sh
+gradle clean build
+```
+Then **copy your JAR to Kafka Connect**:
+```sh
+docker cp target/custom-debezium-transformer-0.0.1.jar debezium-connect:/kafka/connect/debezium-transformer/
+```
+Verify:
+```sh
+docker exec -it debezium-connect ls -l /kafka/connect/debezium-transformer/
+```
+
+---
+
+#### **4️⃣ Restart Kafka Connect**
+Restart the connector so it loads the new JAR:
+```sh
+docker restart debezium-connect
+```
+Then check:
+```sh
+curl -s http://localhost:8083/connector-plugins | jq .
+```
+If your transformation appears, it’s working! 🎯
+
+---
+
+#### **5️⃣ Register Your Connector**
+Finally, register your Kafka Connect config:
+```json
+{
+  "name": "my-debezium-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "localhost",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "password",
+    "database.dbname": "mydb",
+    "transforms": "outbox",
+    "transforms.outbox.type": "com.example.custom_debezium_tranformer.transformer.CustomTransformation"
+  }
+}
+```
+Post it:
+```sh
+curl -X POST -H "Content-Type: application/json" --data @register.json http://localhost:8083/connectors
+```
+
+---
+
+### **✅ Expected Fix**
+✔ **Kafka Connect recognizes your custom transformation**
+✔ **Metrics are enabled via `Monitorable`**
+✔ **No `Class Not Found` errors**
+
+Let me know if you hit any issues! 🚀🔥
+
+
+
+Your error message:
+```plaintext
+java.lang.UnsupportedClassVersionError: com/example/custom_debezium_tranformer/transformer/CustomTransformation has been compiled by a more recent version of the Java Runtime (class file version 61.0), this version of the Java Runtime only recognizes class file versions up to 55.0
+```
+indicates a **Java version mismatch** between your compiled JAR and the Kafka Connect runtime.
+
+---
+
+### **💡 Fix: Align Java Versions**
+Your **Kafka Connect environment** is using **Java 11** (class file version 55.0), but your **custom JAR is compiled with Java 17** (class file version 61.0).
+
+#### **1️⃣ Find Kafka Connect Java Version**
+Run:
+```sh
+docker exec -it debezium-connect java -version
+```
+If it shows Java 11, then you need to **recompile your JAR with Java 11**.
+
+---
+
+#### **2️⃣ Set Java Compatibility in `pom.xml` (Maven)**
+Modify your `pom.xml` to **target Java 11**:
+```xml
+<properties>
+    <java.version>11</java.version>
+</properties>
+```
+If using **Maven Compiler Plugin**, update:
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.8.1</version>
+            <configuration>
+                <source>11</source>
+                <target>11</target>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+---
+
+#### **3️⃣ (Alternative) Set Java Version in `build.gradle` (Gradle)**
+If using Gradle, modify `build.gradle`:
+```gradle
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+```
+or explicitly:
+```gradle
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+```
+
+---
+
+#### **4️⃣ Rebuild the JAR**
+Recompile with:
+```sh
+mvn clean package
+```
+or:
+```sh
+gradle clean build
+```
+Then redeploy the new JAR.
+
+---
+
+#### **5️⃣ Restart Kafka Connect**
+Restart Kafka Connect so it reloads the JAR:
+```sh
+docker restart debezium-connect
+```
+Verify:
+```sh
+curl -s http://localhost:8083/connector-plugins | jq .
+```
+If your transformation appears, the issue is fixed! 🎯🔥
+
+---
+
+### **🚀 Alternative Solution: Upgrade Kafka Connect to Java 17**
+If you prefer **not to downgrade your Java version**, upgrade your Kafka Connect environment to Java 17:
+```sh
+docker run --rm -it --env KAFKA_OPTS="-Djava.version=17" debezium/connect:latest java -version
+```
+But it's safer to match Kafka's existing Java version (Java 11).
+
+Let me know if you need more help! 🚀
+
+
+Your **Kafka Connect container is running Java 11**, but your **custom JAR was compiled with Java 17** (class file version 61.0).
+
+### **✅ Fix: Recompile Your JAR with Java 11**
+Since Kafka Connect expects Java 11 (class file version 55.0), you need to **rebuild your JAR targeting Java 11**.
+
+---
+
+### **1️⃣ Update Your Build Configuration**
+#### **For Maven (`pom.xml`)**
+Modify your `pom.xml`:
+```xml
+<properties>
+    <java.version>11</java.version>
+</properties>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.8.1</version>
+            <configuration>
+                <source>11</source>
+                <target>11</target>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+This ensures that your JAR is compiled for **Java 11**.
+
+#### **For Gradle (`build.gradle`)**
+Modify `build.gradle`:
+```gradle
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+```
+or:
+```gradle
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+```
+
+---
+
+### **2️⃣ Rebuild the JAR**
+Run:
+```sh
+mvn clean package
+```
+or:
+```sh
+gradle clean build
+```
+This will generate a JAR compatible with Java 11.
+
+---
+
+### **3️⃣ Replace the JAR in Kafka Connect**
+Copy the newly built JAR to the correct location:
+```sh
+cp target/custom-debezium-tranformer-0.0.1.jar /kafka/connect/
+```
+Then restart Kafka Connect:
+```sh
+docker restart debezium-connect
+```
+
+---
+
+### **4️⃣ Verify Plugin Registration**
+After restart, check if your transformation is detected:
+```sh
+curl -s http://localhost:8083/connector-plugins | jq .
+```
+If it appears, your issue is **fixed! 🚀🔥**
+
+Let me know if you need help!
+
