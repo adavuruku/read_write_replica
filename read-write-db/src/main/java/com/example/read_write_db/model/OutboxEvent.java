@@ -29,7 +29,6 @@ import java.util.UUID;
  * Created by Sherif.Abdulraheem 3/8/2025 - 4:57 PM
  */
 @Entity
-@Immutable
 @Table(name = "outbox_events")
 @Getter
 @Setter
