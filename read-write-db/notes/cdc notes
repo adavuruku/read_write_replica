@@ -109,4 +109,46 @@ publish to default topic naming
     "type": "source"
 }
 
+#route by a field in the paylod
+
+{
+    "name": "outbox-connector",
+    "config": {
+        "name": "outbox-connector",
+        "key.converter.schemas.enable": "false",
+        "value.converter.schemas.enable": "false",
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "task.max": "1",
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "transforms": "outbox",
+        "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+        "transforms.outbox.table.field.event.key": "aggregate_id",
+        "transforms.outbox.table.field.event.timestamp": "timestamp",
+        "transforms.outbox.table.fields.additional.placement": "type:header:eventType",
+        "transforms.outbox.table.expand.json.payload": "false",
+        "transforms.outbox.route.by.field": "aggregate_type",
+        "transforms.outbox.route.topic.replacement": "${routedByValue}",
+        "database.hostname": "postgres-write",
+        "database.port": "5432",
+        "database.user": "root",
+        "database.password": "secret",
+        "database.dbname": "db_write",
+        "database.server.id": "120391",
+        "binary.handlin.mode": "hex",
+        "tombstone.on.delete": "false",
+        "table.include.list": "public.outbox_events",
+        "include.schema.changes": "false",
+        "topic.prefix": "outbox-events",
+        "slot.name": "outbox_slot",
+        "slot.drop.on.stop": "true",
+        "publication.name": "outbox_publication",
+        "plugin.name": "pgoutput",
+        "schema.history.internal.kafka.boostrap.servers": "kafka:29092",
+        "schema.history.internal.kafka.topic": "schemahistory.readwrite"
+    },
+    "tasks": [],
+    "type": "source"
+}
+
 #filter

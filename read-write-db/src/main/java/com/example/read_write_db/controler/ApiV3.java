@@ -4,6 +4,7 @@ import com.example.read_write_db.dto.AppSettingDto;
 import com.example.read_write_db.model.AppSetting;
 import com.example.read_write_db.service.AppServiceReadWriteImp;
 import com.example.read_write_db.service.EventService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -47,7 +48,7 @@ public class ApiV3 {
     }
 
     @PostMapping("/manual-rollback/{id}")
-    public ResponseEntity<AppSetting> findOrSaveTransactionManualRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting){
+    public ResponseEntity<AppSetting> findOrSaveTransactionManualRollback(@PathVariable(name = "id") Long id, @RequestBody AppSetting appSetting) throws JsonProcessingException {
         return ResponseEntity.ok(eventService.testSaveAndManualException(id, appSetting));
     }
 }

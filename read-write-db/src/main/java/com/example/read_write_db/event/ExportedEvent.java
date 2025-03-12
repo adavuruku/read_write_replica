@@ -1,6 +1,5 @@
 package com.example.read_write_db.event;
 
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.Instant;
 

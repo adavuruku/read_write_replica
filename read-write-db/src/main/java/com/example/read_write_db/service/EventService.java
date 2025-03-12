@@ -2,24 +2,20 @@ package com.example.read_write_db.service;
 
 import com.example.read_write_db.dto.AppSettingDto;
 import com.example.read_write_db.event.CDCEventPublisher;
-import com.example.read_write_db.event.ExportedEvent;
 import com.example.read_write_db.event.type.AppSettingCreatedEvent;
+import com.example.read_write_db.event.type.UserDetailsEvent;
 import com.example.read_write_db.event.type.UserRegisteredEvent;
 import com.example.read_write_db.model.AppSetting;
-import com.example.read_write_db.model.OutboxEvent;
 import com.example.read_write_db.model.User;
 import com.example.read_write_db.repo.read.AppSettingReadRepo;
-import com.example.read_write_db.repo.read.UserReadRepo;
 import com.example.read_write_db.repo.write.AppSettingRepo;
-import com.example.read_write_db.repo.write.OutboxEventRepo;
 import com.example.read_write_db.repo.write.UserRepo;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:54 PM
@@ -30,24 +26,17 @@ public class EventService  {
     private final AppSettingRepo appSettingRepo;
     private final UserRepo userRepository;
     private final AppSettingReadRepo appSettingReadRepo;
-    private final UserReadRepo userReadRepo;
     private final CDCEventPublisher cdcEventPublisher;
-//    private final NotificationService notificationService;
-    private final OutboxEventRepo outboxEvents;
 
     public EventService(AppSettingRepo appSettingRepo, UserRepo userRepository,
-                        AppSettingReadRepo appSettingReadRepo, UserReadRepo userReadRepo,
-                        CDCEventPublisher cdcEventPublisher, OutboxEventRepo outboxEvents) {
+                        AppSettingReadRepo appSettingReadRepo,
+                        CDCEventPublisher cdcEventPublisher) {
         this.appSettingRepo = appSettingRepo;
         this.userRepository = userRepository;
         this.appSettingReadRepo = appSettingReadRepo;
-        this.userReadRepo = userReadRepo;
         this.cdcEventPublisher = cdcEventPublisher;
-        this.outboxEvents = outboxEvents;
     }
 
-
-//    @Transactional(isolation = Isolation.READ_COMMITTED )
     @Transactional
     public AppSetting createSetting(AppSettingDto appSettingDto) {
 
@@ -57,8 +46,7 @@ public class EventService  {
         AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
                 null, appSetting.getDescription(), appSetting.getId()
         );
-        outboxEvents.save(of(appSettingCreatedEvent));
-//        outboxEvents.delete(outboxEvent);
+        cdcEventPublisher.publish(appSettingCreatedEvent);
         return appSetting;
     }
 
@@ -82,37 +70,14 @@ public class EventService  {
         AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
                 user.getFirstName(), appSettingSaved.getDescription(), appSettingSaved.getId()
         );
-
-        //events are published at the end of transaction
-//        cdcEventPublisher.publish(userRegisteredEvent);
-//        cdcEventPublisher.publish(appSettingCreatedEvent);
-        publish(userRegisteredEvent);
-        publish(appSettingCreatedEvent);
+        cdcEventPublisher.publish(userRegisteredEvent);
+        cdcEventPublisher.publish(appSettingCreatedEvent);
         return appSettingSaved;
     }
 
 
-
-//    @Transactional
-    public void publish(ExportedEvent exportedEvent) {
-        OutboxEvent outboxEventSaved = outboxEvents.save(of(exportedEvent));
-        outboxEvents.deleteById(outboxEventSaved.getId());
-    }
-
-    private static OutboxEvent of(ExportedEvent exportedEvent) {
-        return OutboxEvent.builder()
-//                .id(UUID.randomUUID())
-                .aggregateId(exportedEvent.getAggregateId())
-                .aggregateType(exportedEvent.getAggregateType())
-                .type(exportedEvent.getType())
-                .timestamp(exportedEvent.getTimestamp())
-                .payload(exportedEvent.getPayload()).build();
-
-    }
-
-
     @Transactional
-    public AppSetting testSaveAndManualException(Long id, AppSetting appSetting) {
+    public AppSetting testSaveAndManualException(Long id, AppSetting appSetting) throws JsonProcessingException {
         try {
             Optional<AppSetting> app = appSettingReadRepo.findById(id);
             if (app.isEmpty()) {
@@ -121,31 +86,30 @@ public class EventService  {
                 AppSetting appSettingSaved = appSettingRepo.save(appSetting);
 
                 log.info("Saving User");
-                User user = User.builder().firstName("Marvels John - ".concat(appSettingSaved.getId().toString())).country("UG").build();
+                User user = User.builder().firstName("Hawa Obi - ".concat(appSettingSaved.getId().toString())).country("UG").build();
                 userRepository.save(user);
 
-//                saveNewUser();
+                //prepare and publish event
+                log.info("Publishing UserRegisteredEvent");
                 UserRegisteredEvent userRegisteredEvent = UserRegisteredEvent.of(
                         user.getFirstName(), user.getCountry(), user.getCountry(), user.getId()
                 );
+                cdcEventPublisher.publish(userRegisteredEvent);
 
-//                OutboxEvent outboxEvent1 = outboxEvents.save(of(userRegisteredEvent));
-//                outboxEvents.delete(outboxEvent1);
-                publish(userRegisteredEvent);
-
+                //prepare and publish event
+                log.info("Publishing AppSettingCreatedEvent");
                 AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
                         user.getFirstName(), appSettingSaved.getDescription(), appSettingSaved.getId()
                 );
-//                OutboxEvent outboxEvent = outboxEvents.save(of(appSettingCreatedEvent));
-//                outboxEvents.delete(outboxEvent);
-                publish(appSettingCreatedEvent);
-                //events are published at the end of transaction
-//                cdcEventPublisher.publish(appSettingCreatedEvent);
+                cdcEventPublisher.publish(appSettingCreatedEvent);
 
-//
-//                log.info("Rolling back all CUD transaction because {} Not found", appSettingSaved.getId());
-//                // TO Manually mark transaction for rollback
-//                throw new NullPointerException();
+                UserDetailsEvent userDetailsEvent = UserDetailsEvent.of(
+                        user, appSettingSaved
+                );
+                cdcEventPublisher.publish(userDetailsEvent);
+
+                // throw an exception to trigger transaction rollback
+              // throw new NullPointerException();
                 return appSettingSaved;
             } else {
                 log.info(" Found and returning");
@@ -155,11 +119,5 @@ public class EventService  {
             log.info("Message {}", e.getMessage());
             throw e;
         }
-    }
-
-    public void saveNewUser(){
-        User user = User.builder().firstName("Hamdal Sal").country("UG").build();
-        userRepository.save(user);
-
     }
 }
