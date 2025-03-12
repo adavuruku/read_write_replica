@@ -1,0 +1,16 @@
+FROM debezium/connect:2.5
+LABEL authors="sherifabdulraheem"
+
+# Define plugin directory explicitly
+ENV DEBEZIUM_DIR=$KAFKA_CONNECT_PLUGINS_DIR/transformer
+
+## Create plugin directory
+#RUN mkdir -p $DEBEZIUM_DIR
+##
+### Ensure correct file permissions
+RUN chmod -R 777 $DEBEZIUM_DIR
+# Copy custom JAR into plugins directory
+COPY ./custom-debezium-tranformer-0.0.1.jar $DEBEZIUM_DIR/
+
+
+

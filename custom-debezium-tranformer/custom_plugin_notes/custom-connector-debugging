@@ -1,6 +1,15 @@
 connect github https://github.com/apache/kafka/blob/trunk/connect/api/src/main/java/org/apache/kafka/connect/transforms/Transformation.java
 
+chmod -R 777  custom-debezium-tranformer-0.0.1.jar
+docker cp custom-debezium-tranformer-0.0.1.jar debezium-connect:/kafka/connect/debezium-transformer/
+cp /kafka/connect/debezium-transformer/custom-debezium-tranformer-0.0.1.jar /kafka/connect/
 
+sample logs to check if plugin is loaded
+
+Loading plugin from: /kafka/connect/debezium-transformer/custom-debezium-tranformer-0.0.1.jar   [org.apache.kafka.connect.runtime.isolation.PluginScanner]
+2025-03-11 19:15:21 2025-03-11 18:15:21,180 INFO   ||  Registered loader: PluginClassLoader{pluginLocation=file:/kafka/connect/debezium-transformer/custom-debezium-tranformer-0.0.1.jar}   [org.apache.kafka.connect.runtime.isolation.PluginScanner]
+
+#######
 
 ### **🔹 Adding Kafka Connect Transformation to META-INF Services**
 Your issue might be that **Kafka Connect is not discovering your transformation class** because it requires proper **Service Provider Configuration**.

@@ -42,7 +42,7 @@ public class UserRegisteredEvent implements ExportedEvent {
 
     @Override
     public String getAggregateType() {
-        return "ReadWrite.event";
+        return "ReadWrite.events";
     }
 
     @Override

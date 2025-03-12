@@ -76,6 +76,37 @@ publish to default topic naming
     "type": "source"
 }
 
-#route from the fieldname
+#route using custom transformer
+
+{
+    "name": "outbox-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "postgres-write",
+        "database.port": "5432",
+        "database.user": "root",
+        "database.password": "secret",
+        "database.dbname": "db_write",
+        "database.server.name": "outbox-events",
+        "schema.whitelist": "public",
+        "table.include.list": "public.outbox_events",
+        "slot.name": "outbox_slot",
+        "publication.name": "outbox_publication",
+        "plugin.name": "pgoutput",
+        "topic.prefix": "outbox-events",
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "key.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+        "tombstone.on.delete": "false",
+        "transforms": "outbox",
+        "transforms.outbox.type": "com.example.custom_debezium_tranformer.transformer.CustomTransformation",
+        "include.schema.changes": "false",
+        "slot.drop.on.stop": "true",
+        "name": "outbox-connector"
+    },
+    "tasks": [],
+    "type": "source"
+}
 
 #filter

@@ -32,6 +32,7 @@ public class EventService  {
     private final AppSettingReadRepo appSettingReadRepo;
     private final UserReadRepo userReadRepo;
     private final CDCEventPublisher cdcEventPublisher;
+//    private final NotificationService notificationService;
     private final OutboxEventRepo outboxEvents;
 
     public EventService(AppSettingRepo appSettingRepo, UserRepo userRepository,
@@ -92,19 +93,10 @@ public class EventService  {
 
 
 
-
-    private void publish(ExportedEvent exportedEvent) {
-        OutboxEvent outboxEvent = OutboxEvent.builder()
-                .id(UUID.randomUUID())
-                .aggregateId(exportedEvent.getAggregateId())
-                .aggregateType(exportedEvent.getAggregateType())
-                .type(exportedEvent.getType())
-                .timestamp(exportedEvent.getTimestamp())
-                .payload(exportedEvent.getPayload()).build();
-
-        outboxEvents.save(outboxEvent);
-//        outboxEvents.delete(outboxEventSaved);
-
+//    @Transactional
+    public void publish(ExportedEvent exportedEvent) {
+        OutboxEvent outboxEventSaved = outboxEvents.save(of(exportedEvent));
+        outboxEvents.deleteById(outboxEventSaved.getId());
     }
 
     private static OutboxEvent of(ExportedEvent exportedEvent) {
@@ -129,23 +121,31 @@ public class EventService  {
                 AppSetting appSettingSaved = appSettingRepo.save(appSetting);
 
                 log.info("Saving User");
-                User user = User.builder().firstName("John K - ".concat(appSettingSaved.getId().toString())).country("UG").build();
+                User user = User.builder().firstName("Marvels John - ".concat(appSettingSaved.getId().toString())).country("UG").build();
                 userRepository.save(user);
 
-                app = appSettingReadRepo.findById(appSettingSaved.getId());
+//                saveNewUser();
+                UserRegisteredEvent userRegisteredEvent = UserRegisteredEvent.of(
+                        user.getFirstName(), user.getCountry(), user.getCountry(), user.getId()
+                );
+
+//                OutboxEvent outboxEvent1 = outboxEvents.save(of(userRegisteredEvent));
+//                outboxEvents.delete(outboxEvent1);
+                publish(userRegisteredEvent);
 
                 AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
                         user.getFirstName(), appSettingSaved.getDescription(), appSettingSaved.getId()
                 );
-
+//                OutboxEvent outboxEvent = outboxEvents.save(of(appSettingCreatedEvent));
+//                outboxEvents.delete(outboxEvent);
+                publish(appSettingCreatedEvent);
                 //events are published at the end of transaction
-                cdcEventPublisher.publish(appSettingCreatedEvent);
+//                cdcEventPublisher.publish(appSettingCreatedEvent);
 
-                if (app.isEmpty()) {
-                    log.info("Rolling back all CUD transaction because {} Not found", appSettingSaved.getId());
-                    // TO Manually mark transaction for rollback
-                    throw new NullPointerException();
-                }
+//
+//                log.info("Rolling back all CUD transaction because {} Not found", appSettingSaved.getId());
+//                // TO Manually mark transaction for rollback
+//                throw new NullPointerException();
                 return appSettingSaved;
             } else {
                 log.info(" Found and returning");
@@ -155,5 +155,11 @@ public class EventService  {
             log.info("Message {}", e.getMessage());
             throw e;
         }
+    }
+
+    public void saveNewUser(){
+        User user = User.builder().firstName("Hamdal Sal").country("UG").build();
+        userRepository.save(user);
+
     }
 }

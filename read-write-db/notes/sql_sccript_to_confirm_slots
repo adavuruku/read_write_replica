@@ -1,0 +1,29 @@
+SELECT * FROM pg_publication_tables WHERE pubname = 'outbox_publication';
+
+SELECT * FROM pg_logical_slot_peek_changes('outbox_slot', NULL, NULL);
+
+SELECT * FROM pg_replication_slots WHERE slot_name = 'outbox_slot';
+
+ALTER PUBLICATION outbox_publication ADD TABLE public.outbox_events;
+
+
+CREATE PUBLICATION outbox_publication FOR TABLE public.outbox_events;
+
+SELECT * FROM pg_publication;
+
+
+grant pg_monitor to root
+
+
+select * from pg_replication_slots
+
+select current_user
+
+select pg_create_logical_replication_slot('outbox_slot', 'pgoutput')
+
+SELECT datname, encoding, datcollate, datctype FROM pg_database WHERE datname = 'db_write';
+
+DROP PUBLICATION outbox_publication;
+select * from  pg_publication
+
+CREATE IF NOT EXIST PUBLICATION outbox_publication FOR TABLE public.outbox_events;

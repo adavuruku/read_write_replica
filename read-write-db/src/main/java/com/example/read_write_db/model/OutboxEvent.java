@@ -71,7 +71,7 @@ public class OutboxEvent { // Configure and ensure binlog retention is not too s
     @Column(name = "timestamp", nullable = false, updatable = false)
     Instant timestamp;
 
-    @Version
+//    @Version
     @Column(name = "version")
     Integer version;
 }

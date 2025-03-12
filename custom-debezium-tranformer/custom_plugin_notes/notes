@@ -68,3 +68,35 @@ chmod -R 777  custom-debezium-tranformer-0.0.1.jar
 sherifabdulraheem@Sherifs-MacBook-Pro read-write-db % docker cp custom-debezium-tranformer-0.0.1.jar debezium-connect:/kafka/connect/debezium-transformer/
 
 cp /kafka/connect/debezium-transformer/custom-debezium-tranformer-0.0.1.jar /kafka/connect/
+
+
+
+{
+            "before": {
+            "id": "91f4282c-4869-4ee7-884c-290a9656c757",
+                    "aggregate_type": "",
+                    "aggregate_id": 0,
+                    "type": null,
+                    "payload": "",
+                    "timestamp": 0,
+                    "version": null
+        },
+            "after": null,
+                "source": {
+            "version": "2.5.4.Final",
+                    "connector": "postgresql",
+                    "name": "outbox-events",
+                    "ts_ms": 1741736107872,
+                    "snapshot": "false",
+                    "db": "db_write",
+                    "sequence": "[\"25858232\",\"25923680\"]",
+                    "schema": "public",
+                    "table": "outbox_events",
+                    "txId": 956,
+                    "lsn": 25923680,
+                    "xmin": null
+        },
+            "op": "d",
+                "ts_ms": 1741736108017,
+                "transaction": null
+        }
