@@ -103,6 +103,7 @@ public class EventService  {
                 );
                 cdcEventPublisher.publish(appSettingCreatedEvent);
 
+                log.info("Publishing UserDetailsEvent");
                 UserDetailsEvent userDetailsEvent = UserDetailsEvent.of(
                         user, appSettingSaved
                 );
@@ -115,6 +116,40 @@ public class EventService  {
                 log.info(" Found and returning");
                 return app.get();
             }
+        }catch (Exception e){
+            log.info("Message {}", e.getMessage());
+            throw e;
+        }
+    }
+
+
+    @Transactional
+    public AppSetting scenarioException(AppSetting appSetting) throws JsonProcessingException {
+        try {
+
+            log.info("Saving User");
+            User user = User.builder().firstName("Macaulay Paul").country("Italy").build();
+            Optional<User> userExist = userRepository.findById(1L);
+
+            log.info("Saving AppSetting");
+            AppSetting appSettingSaved = appSettingRepo.save(appSetting);
+
+            //prepare and publish event
+            log.info("Publishing AppSettingCreatedEvent");
+            AppSettingCreatedEvent appSettingCreatedEvent = AppSettingCreatedEvent.of(
+                    userExist.get().getFirstName(), appSettingSaved.getDescription(), appSettingSaved.getId()
+            );
+            cdcEventPublisher.publish(appSettingCreatedEvent);
+
+            log.info("Publishing UserDetailsEvent");
+            UserDetailsEvent userDetailsEvent = UserDetailsEvent.of(
+                    user, appSettingSaved
+            );
+            cdcEventPublisher.publish(userDetailsEvent);
+
+            // throw an exception to trigger transaction rollback
+             throw new NullPointerException();
+//            return appSettingSaved;
         }catch (Exception e){
             log.info("Message {}", e.getMessage());
             throw e;
