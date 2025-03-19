@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisUtility {
     private @Autowired RedisTemplate<String, Object> redisTemplate;
     private @Autowired RedisTemplate<String, Integer> integerRedisTemplate;
-    private static final String REDIS_PREFIX = "ConsumerService:";
+    private static final String REDIS_PREFIX = "ReadWriteService:";
 
     private String getRedisKey(String key){
         return REDIS_PREFIX + key;
