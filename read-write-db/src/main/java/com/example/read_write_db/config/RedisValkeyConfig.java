@@ -26,6 +26,7 @@ public class RedisValkeyConfig {
 
     /***
      * Redis or Valkey config
+     * We're using Medis UI to view redis
      */
     @Bean("customValkeyConfig")
     public LettuceConnectionFactory valkeyConnectionFactory() {
