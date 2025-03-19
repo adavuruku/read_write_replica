@@ -12,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 /**
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:49 PM
  **/
@@ -22,7 +24,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name="users")
-public class User {
+public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

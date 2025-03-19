@@ -49,6 +49,15 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
+<!--		Redis-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.lettuce</groupId>
+			<artifactId>lettuce-core</artifactId>
+		</dependency>
 <!--		<dependency>-->
 <!--			<groupId>com.vladmihalcea</groupId>-->
 <!--			<artifactId>hibernate-types-60</artifactId>-->

@@ -12,6 +12,7 @@ import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -150,6 +151,20 @@ public class EventService  {
             // throw an exception to trigger transaction rollback
              throw new NullPointerException();
 //            return appSettingSaved;
+        }catch (Exception e){
+            log.info("Message {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Cacheable(value = "user", key = "#id", condition = "#id > 20")
+    public User testValkey(Long id) {
+        try {
+            Optional<User> userExist = userRepository.findById(id);
+            if (userExist.isPresent()){
+                return userExist.get();
+            }
+            throw new RuntimeException();
         }catch (Exception e){
             log.info("Message {}", e.getMessage());
             throw e;

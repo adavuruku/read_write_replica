@@ -2,6 +2,7 @@ package com.example.read_write_db.controler;
 
 import com.example.read_write_db.dto.AppSettingDto;
 import com.example.read_write_db.model.AppSetting;
+import com.example.read_write_db.model.User;
 import com.example.read_write_db.service.AppServiceReadWriteImp;
 import com.example.read_write_db.service.EventService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +46,11 @@ public class ApiV3 {
     @PostMapping("/save-user-app")
     public ResponseEntity<AppSetting> findOrSaveTransactionAutRollback(@RequestBody AppSetting appSetting){
         return ResponseEntity.ok(eventService.testSaveUserAndAppSetting(appSetting));
+    }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(eventService.testValkey(id));
     }
 
     @PostMapping("/manual-rollback/{id}")
