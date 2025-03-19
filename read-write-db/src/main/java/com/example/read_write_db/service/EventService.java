@@ -12,6 +12,8 @@ import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,14 +30,17 @@ public class EventService  {
     private final UserRepo userRepository;
     private final AppSettingReadRepo appSettingReadRepo;
     private final CDCEventPublisher cdcEventPublisher;
+    private final CacheManager caffeineCacheManager;
 
     public EventService(AppSettingRepo appSettingRepo, UserRepo userRepository,
                         AppSettingReadRepo appSettingReadRepo,
-                        CDCEventPublisher cdcEventPublisher) {
+                        CDCEventPublisher cdcEventPublisher,
+                        @Qualifier("valkeyManager") CacheManager caffeineCacheManager) {
         this.appSettingRepo = appSettingRepo;
         this.userRepository = userRepository;
         this.appSettingReadRepo = appSettingReadRepo;
         this.cdcEventPublisher = cdcEventPublisher;
+        this.caffeineCacheManager = caffeineCacheManager;
     }
 
     @Transactional
@@ -157,7 +162,7 @@ public class EventService  {
         }
     }
 
-    @Cacheable(value = "user", key = "#id", condition = "#id > 20")
+    @Cacheable(value = "user", key = "#id", condition = "#id > 20", cacheManager = "valkeyManager")
     public User testValkey(Long id) {
         try {
             Optional<User> userExist = userRepository.findById(id);
