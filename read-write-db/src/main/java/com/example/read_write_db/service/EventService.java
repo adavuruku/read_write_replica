@@ -12,9 +12,11 @@ import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -174,5 +176,14 @@ public class EventService  {
             log.info("Message {}", e.getMessage());
             throw e;
         }
+    }
+
+//    @Scheduled(cron = "0/10 * * * * *") //every 10 seconds
+    @Scheduled(cron = "0 */1 * * * ?") //
+    @Transactional
+    @SchedulerLock(name = "scheduleTask", lockAtMostFor = "10m", lockAtLeastFor = "1m")
+    public void scheduleTask(){
+        log.info("Scheduling task");
+        log.info("Task scheduled");
     }
 }
