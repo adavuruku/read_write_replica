@@ -15,6 +15,7 @@
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>17</java.version>
+		<spring-integration.version>6.2.1</spring-integration.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -29,6 +30,11 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 <!--			<scope>runtime</scope>-->
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.shell</groupId>
@@ -88,6 +94,23 @@
 <!--			<artifactId>hibernate-types-60</artifactId>-->
 <!--			<version>2.21.1</version>-->
 <!--		</dependency>-->
+
+<!--		Spring integration imp-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-integration</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-http</artifactId>
+			<version>${spring-integration.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-kafka</artifactId>
+			<version>${spring-integration.version}</version>
+		</dependency>
+<!--		ends here-->
 	</dependencies>
 
 	<build>
