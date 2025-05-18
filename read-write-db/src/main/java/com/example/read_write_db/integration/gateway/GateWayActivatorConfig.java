@@ -62,8 +62,24 @@ public class GateWayActivatorConfig {
         return Executors.newFixedThreadPool(5);
     }
 
+    /**
+     * Executor channel uses a task executor for async execution of handlers
+     * it channel the message to a task executor and select a thread for
+     * excecution
+     *
+     */
     @Bean
     public MessageChannel asyncChannel(){
+        return new ExecutorChannel(taskExecutor());
+    }
+
+    @Bean("splitChannel")
+    public MessageChannel splitChannel(){
+        return new DirectChannel();
+    }
+
+    @Bean
+    public MessageChannel asyncSplitChannel(){
         return new ExecutorChannel(taskExecutor());
     }
 
