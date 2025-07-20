@@ -215,8 +215,8 @@ public class FlowConfig {
                     h.header("appId", "21A4");
                     h.header("customSize", "T(payload.appSettingDtoList.size())");
                 })
-                .split(AppSettingList.class, AppSettingList::getAppSettingDtoList) //process each item in list synchronously
                 .channel(asyncSplitChannel) //this send each message item asynchronously to a thread in pool to be processed
+                .split(AppSettingList.class, AppSettingList::getAppSettingDtoList) //process each item in list synchronously
                 .handle(new ServiceActivator(), "processItem") //handle each split item
                 .aggregate(aggregatorSpec -> aggregatorSpec //aggregate back to a single message
                         .correlationStrategy(message -> {

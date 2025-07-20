@@ -1,0 +1,103 @@
+package com.scholastic.eds.platform.access.authorization.config;
+
+import com.scholastic.eds.access.common.api.util.security.jwt.filter.JwtFilter;
+import com.scholastic.eds.access.common.api.util.security.jwt.util.JwtUtil;
+import com.scholastic.eds.common.auth.client.AuthorizationServerClient;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+
+import java.io.IOException;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+@Configuration
+@EnableWebSecurity
+@ComponentScan(lazyInit = true, basePackageClasses = {JwtUtil.class, JwtFilter.class, AuthorizationServerClient.class, com.scholastic.eds.common.auth.config.AuthorizationServerConfig.class}, basePackages = {"com.scholastic.eds.common.api.webclient"})
+public class SecurityConfig {
+
+
+    @Value("${authorization.security.filter-url-patterns}")
+    private String[] filterUrlPatterns;
+
+    @Autowired
+    OAuth2AuthorizationService authorizationService;
+
+    @Bean
+    public FilterRegistrationBean<JwtFilter> jwtFilterConfig(JwtFilter jwtFilter) {
+        FilterRegistrationBean<JwtFilter> filter = new FilterRegistrationBean<>();
+        filter.setFilter(jwtFilter);
+        // provide endpoints which needs to be restricted.
+        // All Endpoints would be restricted if unspecified
+        filter.addUrlPatterns(filterUrlPatterns);
+        return filter;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.headers(headers ->
+                    headers
+                            .contentTypeOptions(withDefaults())
+                            .xssProtection(withDefaults())
+                            .cacheControl(withDefaults())
+                            .httpStrictTransportSecurity(withDefaults())
+                            .frameOptions(withDefaults())
+                            .contentSecurityPolicy(csp ->
+                                    csp.policyDirectives("form-action 'self'"))
+            );
+        http.csrf(AbstractHttpConfigurer::disable);
+        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+                new OAuth2AuthorizationServerConfigurer();
+
+
+        return http
+                .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+                .with(authorizationServerConfigurer, (authorizationServer) ->
+                        authorizationServer
+                                .tokenRevocationEndpoint(tokenRevocationEndpoint ->
+                                        tokenRevocationEndpoint.revocationResponseHandler(this::customSuccessHandler
+                                        )))
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint(
+                                new LoginUrlAuthenticationEntryPoint("/login")
+                        ))
+                .build();
+
+    }
+
+    private void customSuccessHandler(HttpServletRequest request,
+                                      HttpServletResponse response,
+                                      Authentication authentication) {
+
+        String token = request.getParameter("token");
+
+        if (token != null) {
+            OAuth2Authorization authorization = authorizationService.findByToken(token, OAuth2TokenType.ACCESS_TOKEN);
+            if (authorization != null) {
+                authorizationService.remove(authorization);
+            }
+        }
+        response.setStatus(HttpStatus.OK.value());
+    }
+
+}

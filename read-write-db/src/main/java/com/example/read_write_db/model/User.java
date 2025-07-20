@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * Created by Sherif.Abdulraheem 2/5/2025 - 2:49 PM
@@ -32,4 +33,7 @@ public class User implements Serializable {
     String firstName;
     @Column(name = "country")
     String country;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    Instant createdAt;
 }

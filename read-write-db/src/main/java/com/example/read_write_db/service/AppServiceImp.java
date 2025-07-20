@@ -7,7 +7,9 @@ import com.example.read_write_db.model.AppSetting;
 import com.example.read_write_db.model.User;
 import com.example.read_write_db.repo.write.AppSettingRepo;
 import com.example.read_write_db.repo.write.UserRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import java.util.Optional;
 @Service
 //@AllArgsConstructor
 //@Transactional
+@Slf4j
 public class AppServiceImp implements AppService {
     @Autowired
     private AppSettingRepo appSettingRepo;
@@ -169,4 +172,10 @@ public class AppServiceImp implements AppService {
 //            return app.get();
 //        }
 //    }
+
+    @Scheduled(cron = "${auth.token.cleanup.schedule:0/2 * * * * *}")
+    public void evictExpiredToken() {
+        int totalRecordDeleted = userRepository.deleteExpiredTokens();
+        log.info("Total expired token deleted : {}", totalRecordDeleted);
+    }
 }
